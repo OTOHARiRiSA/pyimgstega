@@ -31,7 +31,7 @@ def main():
     A = np.array(luminance_light_image, dtype=np.float32)  # 表层
     B = np.array(luminance_dark_image, dtype=np.float32)   # 里层
 
-    alpha = (A - B + 255) / 2
+    alpha = (B - A + 255) / 2
     alpha = np.clip(alpha, 0, 255).astype(np.uint8)
 
     R = (A.astype(np.float32) * alpha + B.astype(np.float32) * (255 - alpha)) / 255
