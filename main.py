@@ -28,10 +28,12 @@ def main():
     luminance_light_image = light_image.convert('L')
     luminance_dark_image = dark_image.convert('L')
     
-    A = np.array(luminance_light_image, dtype=np.float32)  # 表层
-    B = np.array(luminance_dark_image, dtype=np.float32)   # 里层
+    A = np.array(luminance_light_image, dtype=np.float32)
+    B = np.array(luminance_dark_image, dtype=np.float32)
 
     alpha = (B - A + 255) / 2
+    intensity = 0.8
+    alpha = (alpha - 128) * intensity + 128
     alpha = np.clip(alpha, 0, 255).astype(np.uint8)
 
     R = (A.astype(np.float32) * alpha + B.astype(np.float32) * (255 - alpha)) / 255
