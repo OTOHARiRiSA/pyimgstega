@@ -1,7 +1,16 @@
 from PIL import Image
 import numpy as np
+import argparse
 import os
 import time
+
+def get_args():
+    parser = argparse.ArgumentParser(description="Get the paths to the light and dark images, intensity, and mode.")
+    parser.add_argument("--light", "-l", type=str, help="Path to the light/front image.", required=True)
+    parser.add_argument("--dark", "-d", type=str, help="Path to the dark/back image.", required=True)
+    parser.add_argument("--intensity", "-i", type=float, default=0.8, help="Intensity of the mix (default: 0.8).")
+    parser.add_argument("--mode", "-m", type=str, choices=['mirage', 'color'], default='mirage', help="Mode of mixing: 'mirage' or 'color' (default: 'mirage').")
+    return parser.parse_args()
 
 def gen_outputs_dir():
     try:
@@ -10,13 +19,11 @@ def gen_outputs_dir():
         print(f"Error creating output directory: {e}")
         return
     
-def open_img():
-    light_img = input("Enter the path to the light/front image: ").strip()
-    dark_img = input("Enter the path to the dark/back image: ").strip()
+def open_img(light_path=None, dark_path=None):
     
     try:
-        light_image = Image.open(light_img)
-        dark_image = Image.open(dark_img)
+        light_image = Image.open(light_path) # type: ignore[arg-type]
+        dark_image = Image.open(dark_path) # type: ignore[arg-type]
     except Exception as e:
         print(f"Error opening images: {e}")
         return None, None
@@ -26,11 +33,6 @@ def open_img():
         return None, None
     
     return light_image, dark_image
-
-def gen_mirage_img(light_image, dark_image):
-    luminance_light_image = light_image.convert('L')
-    luminance_dark_image = dark_image.convert('L')
-    return luminance_light_image, luminance_dark_image
 
 def mirage_mode(A, B, alpha):
     R = (A.astype(np.float32) * alpha + B.astype(np.float32) * (255 - alpha)) / 255
@@ -56,18 +58,20 @@ def color_mode(A, B, alpha):
     output_img[..., 3] = alpha
     return output_img
 
-def mix_images(light_image, dark_image, mode='mirage'):
-    A = np.array(light_image, dtype=np.float32)
-    B = np.array(dark_image, dtype=np.float32)
+def mix_images(light_image, dark_image, intensity, mode='mirage'):
+    
+    A = np.array(light_image.convert('L'), dtype=np.float32)
+    B = np.array(dark_image.convert('L'), dtype=np.float32)
     
     alpha = (B - A + 255) / 2
-    intensity = 0.8
     alpha = (alpha - 128) * intensity + 128
     alpha = np.clip(alpha, 0, 255).astype(np.uint8)
     
     if mode == 'mirage':
         output_img = mirage_mode(A, B, alpha)
     elif mode == 'color':
+        A = np.array(light_image.convert('RGB'), dtype=np.float32)
+        B = np.array(dark_image.convert('RGB'), dtype=np.float32)
         output_img = color_mode(A, B, alpha)
     else:
         raise ValueError("Invalid mode. Choose 'mirage' or 'color'.")
@@ -78,24 +82,22 @@ def mix_images(light_image, dark_image, mode='mirage'):
 def main():
     
     gen_outputs_dir()
+    args = get_args()
     
-    light_image, dark_image = open_img()
+    assert args.light is not None, "Light image path is required"
+    assert args.dark is not None, "Dark image path is required"
     
-    if light_image is None or dark_image is None:
-        return
+    light_image, dark_image = open_img(light_path=args.light, dark_path=args.dark)
     
-    mode = input("Enter mode ('mirage' or 'color'): ").strip().lower()
-    if mode not in ['mirage', 'color']:
-        print("Invalid mode. Please choose 'mirage' or 'color'.")
-        return
+    mode = args.mode
+    intensity = args.intensity
+    
     if mode == 'mirage':
         print("Mirage mode selected. The output will be a grayscale image with alpha channel.")
-        light_image, dark_image = gen_mirage_img(light_image, dark_image)
     else:
         print("Color mode selected. The output will be a color image with alpha channel.")
-    
-    
-    output_img = mix_images(light_image, dark_image, mode=mode)
+
+    output_img = mix_images(light_image, dark_image, intensity, mode=mode)
     
     output_img = Image.fromarray(output_img, mode='RGBA')
     
