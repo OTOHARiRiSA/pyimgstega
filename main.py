@@ -32,7 +32,31 @@ def gen_mirage_img(light_image, dark_image):
     luminance_dark_image = dark_image.convert('L')
     return luminance_light_image, luminance_dark_image
 
-def mix_images(light_image, dark_image):
+def mirage_mode(A, B, alpha):
+    R = (A.astype(np.float32) * alpha + B.astype(np.float32) * (255 - alpha)) / 255
+    R = np.clip(R, 0, 255).astype(np.uint8)
+    output_img = np.zeros((A.shape[0], A.shape[1], 4), dtype=np.uint8)
+    output_img[..., 0] = R
+    output_img[..., 1] = R
+    output_img[..., 2] = R
+    output_img[..., 3] = alpha
+    return output_img
+
+def color_mode(A, B, alpha):
+    R = (A[..., 0].astype(np.float32) * alpha + B[..., 0].astype(np.float32) * (255 - alpha)) / 255
+    G = (A[..., 1].astype(np.float32) * alpha + B[..., 1].astype(np.float32) * (255 - alpha)) / 255
+    B = (A[..., 2].astype(np.float32) * alpha + B[..., 2].astype(np.float32) * (255 - alpha)) / 255
+    R = np.clip(R, 0, 255).astype(np.uint8)
+    G = np.clip(G, 0, 255).astype(np.uint8)
+    B = np.clip(B, 0, 255).astype(np.uint8)
+    output_img = np.zeros((A.shape[0], A.shape[1], 4), dtype=np.uint8)
+    output_img[..., 0] = R
+    output_img[..., 1] = G
+    output_img[..., 2] = B
+    output_img[..., 3] = alpha
+    return output_img
+
+def mix_images(light_image, dark_image, mode='mirage'):
     A = np.array(light_image, dtype=np.float32)
     B = np.array(dark_image, dtype=np.float32)
     
@@ -41,13 +65,12 @@ def mix_images(light_image, dark_image):
     alpha = (alpha - 128) * intensity + 128
     alpha = np.clip(alpha, 0, 255).astype(np.uint8)
     
-    R = (A.astype(np.float32) * alpha + B.astype(np.float32) * (255 - alpha)) / 255
-    R = np.clip(R, 0, 255).astype(np.uint8)
-    output_img = np.zeros((A.shape[0], A.shape[1], 4), dtype=np.uint8)
-    output_img[..., 0] = R
-    output_img[..., 1] = R
-    output_img[..., 2] = R
-    output_img[..., 3] = alpha
+    if mode == 'mirage':
+        output_img = mirage_mode(A, B, alpha)
+    elif mode == 'color':
+        output_img = color_mode(A, B, alpha)
+    else:
+        raise ValueError("Invalid mode. Choose 'mirage' or 'color'.")
     
     return output_img
 
@@ -60,17 +83,26 @@ def main():
     
     if light_image is None or dark_image is None:
         return
-
-    luminance_light_image, luminance_dark_image = gen_mirage_img(light_image, dark_image)
     
-    output_img = mix_images(luminance_light_image, luminance_dark_image)
+    mode = input("Enter mode ('mirage' or 'color'): ").strip().lower()
+    if mode not in ['mirage', 'color']:
+        print("Invalid mode. Please choose 'mirage' or 'color'.")
+        return
+    if mode == 'mirage':
+        print("Mirage mode selected. The output will be a grayscale image with alpha channel.")
+        light_image, dark_image = gen_mirage_img(light_image, dark_image)
+    else:
+        print("Color mode selected. The output will be a color image with alpha channel.")
+    
+    
+    output_img = mix_images(light_image, dark_image, mode=mode)
     
     output_img = Image.fromarray(output_img, mode='RGBA')
     
     current_time = time.strftime("%Y%m%d_%H%M%S")
     output_img.save(f"output/output_image_{current_time}.png", "PNG", compress_level=0)
     
-    print(f"Mirage image generated successfully! Path: output/output_image_{current_time}.png")
+    print(f"{mode.capitalize()} image generated successfully! Path: output/output_image_{current_time}.png")
     
 if __name__ == "__main__":  
     main()
