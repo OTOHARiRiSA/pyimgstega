@@ -40,6 +40,22 @@ def color_mode(A, B, alpha):
     output_img[..., 3] = alpha
     return output_img
 
+def prism_mode(A, B):
+    H, W, _ = A.shape()
+    
+    B = B / 4.0
+    
+    output = np.zeros_like(A)
+    x = np.arange(W)
+    y = np.arange(H)
+    xx, yy = np.meshgrid(x, y)
+    mask = (xx + yy) % 2 == 0
+    
+    output[mask] = A[mask]
+    output[~mask] = B[~mask]
+    
+    return np.clip(output, 0, 255).astype(np.uint8)
+
 #core algorithm
 def mix_images(light_image, dark_image, intensity, mode='mirage'):
     
@@ -56,7 +72,12 @@ def mix_images(light_image, dark_image, intensity, mode='mirage'):
         A = np.array(light_image.convert('RGB'), dtype=np.float32)
         B = np.array(dark_image.convert('RGB'), dtype=np.float32)
         output_img = color_mode(A, B, alpha)
+    elif mode == 'prism':
+        A = np.array(light_image.convert('RGB'), dtype=np.float32)
+        B = np.array(dark_image.convert('RGB'), dtype=np.float32)
+        output_img = prism_mode(A, B)
     else:
         raise ValueError("Invalid mode. Choose 'mirage' or 'color'.")
     
     return output_img
+
