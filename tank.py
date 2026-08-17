@@ -41,7 +41,7 @@ def color_mode(A, B, alpha):
     return output_img
 
 def prism_mode(A, B):
-    H, W, _ = A.shape()
+    H, W, _ = A.shape
     
     B = B / 4.0
     
@@ -81,3 +81,9 @@ def mix_images(light_image, dark_image, intensity, mode='mirage'):
     
     return output_img
 
+def save_img(output_img, mode):
+    if mode == 'prism':
+        output_img = Image.fromarray(output_img, mode='RGB')
+    else:
+        output_img = Image.fromarray(output_img, mode='RGBA')
+    return output_img

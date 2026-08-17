@@ -33,7 +33,7 @@ def main():
 
     output_img = tank.mix_images(light_image, dark_image, intensity, mode=mode)
     
-    output_img = tank.Image.fromarray(output_img, mode='RGBA')
+    output_img = tank.save_img(output_img, mode=mode)
     
     current_time = time.strftime("%Y%m%d_%H%M%S")
     output_img.save(f"output/output_image_{current_time}.png", "PNG", compress_level=0)
