@@ -1,21 +1,13 @@
-import os
-import time
-
+import imgio
 import cli
 import tank
 
-def gen_outputs_dir():
-    try:
-        os.makedirs("output", exist_ok=True)
-    except Exception as e:
-        print(f"Error creating output directory: {e}")
-        return
-    
+
 
 
 def main():
     
-    gen_outputs_dir()
+    imgio.gen_outputs_dir()
     args = cli.get_args()
     
     assert args.light is not None, "Light image path is required"
@@ -35,7 +27,7 @@ def main():
     
     output_img = tank.save_img(output_img, mode=mode)
     
-    current_time = time.strftime("%Y%m%d_%H%M%S")
+    current_time = imgio.time.strftime("%Y%m%d_%H%M%S")
     output_img.save(f"output/output_image_{current_time}.png", "PNG", compress_level=0)
     
     print(f"{mode.capitalize()} image generated successfully! Path: output/output_image_{current_time}.png")
